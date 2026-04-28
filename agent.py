@@ -1,6 +1,7 @@
 import os
 import requests
 import json
+import sys
 from datetime import datetime
 
 # Configuration from GitHub Secrets
@@ -8,37 +9,45 @@ BTC_ADDRESS = os.getenv("BTC_ADDRESS")
 STX_ADDRESS = os.getenv("STX_ADDRESS")
 MNEMONIC = os.getenv("MNEMONIC")
 
+def check_secrets():
+    missing = []
+    if not BTC_ADDRESS: missing.append("BTC_ADDRESS")
+    if not STX_ADDRESS: missing.append("STX_ADDRESS")
+    if not MNEMONIC: missing.append("MNEMONIC")
+    
+    if missing:
+        print(f"ERROR: Missing GitHub Secrets: {', '.join(missing)}")
+        print("Please add these in Settings > Secrets and variables > Actions")
+        sys.exit(1)
+
 def get_iso_timestamp():
     return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 def send_heartbeat():
-    print("Sending heartbeat...")
+    print(f"[{datetime.utcnow()}] Sending heartbeat for {BTC_ADDRESS}...")
     timestamp = get_iso_timestamp()
     message = f"AIBTC Check-In | {timestamp}"
-    
-    # In a real GitHub action, you'd use a signing library here.
-    # For now, we'll log the intent. To fully automate, you'd integrate 
-    # a library like 'aibtc-python-sdk' or 'stacks-py'.
-    print(f"Action: Sign '{message}' with BTC key and POST to /api/heartbeat")
+    # Future: Add actual signing logic here
+    print(f"Action: Sign '{message}'")
 
-def file_news():
-    print("Checking for news signals...")
+def file_news(current_hour):
+    print(f"[{datetime.utcnow()}] Checking for news signals (Hour: {current_hour})...")
     # Logic to fetch from arXiv or Tenero would go here
-    # Then POST to /api/register
-    print("Action: Fetching news and filing signal to aibtc-network beat")
+    print("Action: Fetching and filing news signal...")
 
 if __name__ == "__main__":
-    current_hour = datetime.utcnow().hour
+    check_secrets()
     
-    # Simple logic based on your schedule
-    send_heartbeat() # Always send heartbeat when triggered
+    current_hour = datetime.utcnow().hour
+    print(f"Agent starting. Current UTC hour: {current_hour}")
+    
+    send_heartbeat()
     
     if current_hour == 6:
-        print("Running 06:00 UTC ArXiv Research...")
-        file_news()
+        file_news(6)
     elif current_hour == 13:
-        print("Running 13:00 UTC Market Research...")
-        file_news()
+        file_news(13)
     elif current_hour == 20:
-        print("Running 20:00 UTC Scout Research...")
-        file_news()
+        file_news(20)
+    else:
+        print("Not a scheduled news window. Skipping news filing.")
