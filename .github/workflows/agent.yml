@@ -2,7 +2,8 @@ name: AIBTC Agent Automation
 
 on:
   schedule:
-    - cron: '*/20 * * * *'
+    # Runs every 15 minutes to ensure max activity
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 env:
@@ -23,8 +24,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run Heartbeat
+      - name: Run Agent
         env:
           BTC_ADDRESS: ${{ secrets.BTC_ADDRESS }}
           MNEMONIC: ${{ secrets.MNEMONIC }}
-        run: node heartbeat.js
+        run: node agent.js
