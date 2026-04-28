@@ -1,2 +1,3 @@
 requests
-aibtc-sdk
+ecdsa
+base58
