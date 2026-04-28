@@ -1,53 +1,80 @@
 import os
-import requests
-import json
 import sys
+import requests
 from datetime import datetime
+from aibtc_sdk.wallet import AISigner
+from aibtc_sdk.network import AIBTCNetwork
 
 # Configuration from GitHub Secrets
 BTC_ADDRESS = os.getenv("BTC_ADDRESS")
 STX_ADDRESS = os.getenv("STX_ADDRESS")
 MNEMONIC = os.getenv("MNEMONIC")
 
-def check_secrets():
-    missing = []
-    if not BTC_ADDRESS: missing.append("BTC_ADDRESS")
-    if not STX_ADDRESS: missing.append("STX_ADDRESS")
-    if not MNEMONIC: missing.append("MNEMONIC")
-    
-    if missing:
-        print(f"ERROR: Missing GitHub Secrets: {', '.join(missing)}")
-        print("Please add these in Settings > Secrets and variables > Actions")
-        sys.exit(1)
+# Initialize SDK
+signer = AISigner(mnemonic=MNEMONIC)
+network = AIBTCNetwork()
 
 def get_iso_timestamp():
     return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 def send_heartbeat():
-    print(f"[{datetime.utcnow()}] Sending heartbeat for {BTC_ADDRESS}...")
+    print(f"[{datetime.utcnow()}] Sending real heartbeat...")
     timestamp = get_iso_timestamp()
     message = f"AIBTC Check-In | {timestamp}"
-    # Future: Add actual signing logic here
-    print(f"Action: Sign '{message}'")
+    
+    # Sign with BTC key (BIP-322/137 handled by SDK)
+    signature = signer.sign_bitcoin_message(message)
+    
+    payload = {
+        "btcAddress": BTC_ADDRESS,
+        "message": message,
+        "signature": signature,
+        "timestamp": timestamp
+    }
+    
+    response = requests.post("https://aibtc.com/api/heartbeat", json=payload)
+    print(f"Heartbeat Result: {response.status_code} - {response.text}")
 
-def file_news(current_hour):
-    print(f"[{datetime.utcnow()}] Checking for news signals (Hour: {current_hour})...")
-    # Logic to fetch from arXiv or Tenero would go here
-    print("Action: Fetching and filing news signal...")
+def file_arxiv_signal():
+    print(f"[{datetime.utcnow()}] Fetching fresh arXiv research...")
+    # Get top relevant paper from arXiv
+    papers = network.arxiv_search(categories="cs.MA,cs.AI", limit=1)
+    
+    if not papers:
+        print("No new relevant papers found.")
+        return
+
+    paper = papers[0]
+    headline = f"ArXiv Research: {paper['title'][:100]}"
+    body = f"New research published: {paper['abstract'][:500]}..."
+    
+    print(f"Filing signal: {headline}")
+    
+    # File via news API
+    result = network.file_news_signal(
+        beat_slug="aibtc-network",
+        headline=headline,
+        body=body,
+        sources=[{"url": paper['abs_url'], "title": paper['title']}],
+        tags=["arxiv", "ai-agents", "research"],
+        disclosure="Autonomous Sage Spoke Agent, aibtc-sdk"
+    )
+    print(f"News Signal Result: {result}")
 
 if __name__ == "__main__":
-    check_secrets()
-    
+    if not MNEMONIC or not BTC_ADDRESS:
+        print("CRITICAL: Missing secrets.")
+        sys.exit(1)
+
     current_hour = datetime.utcnow().hour
-    print(f"Agent starting. Current UTC hour: {current_hour}")
-    
+    print(f"Agent Active. UTC Hour: {current_hour}")
+
+    # Always send heartbeat
     send_heartbeat()
-    
+
+    # File news during scheduled windows
     if current_hour == 6:
-        file_news(6)
-    elif current_hour == 13:
-        file_news(13)
-    elif current_hour == 20:
-        file_news(20)
-    else:
-        print("Not a scheduled news window. Skipping news filing.")
+        file_arxiv_signal()
+    elif current_hour in [13, 20]:
+        # You can add Tenero/Scout logic here later
+        print("Scheduled news window. Logic pending for this slot.")
