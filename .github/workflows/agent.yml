@@ -2,10 +2,8 @@ name: AIBTC Agent Automation
 
 on:
   schedule:
-    # Runs every 3 hours to ensure heartbeats are sent, 
-    # and handles news at your specific UTC times.
     - cron: '0 */3 * * *'
-  workflow_dispatch: # Allows manual trigger from GitHub UI
+  workflow_dispatch:
 
 jobs:
   run-agent:
@@ -29,4 +27,5 @@ jobs:
           BTC_ADDRESS: ${{ secrets.BTC_ADDRESS }}
           STX_ADDRESS: ${{ secrets.STX_ADDRESS }}
           MNEMONIC: ${{ secrets.MNEMONIC }}
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         run: python agent.py
