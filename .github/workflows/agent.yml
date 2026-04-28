@@ -2,12 +2,10 @@ name: AIBTC Agent Automation
 
 on:
   schedule:
-    # Set to every 20 minutes to avoid hitting GitHub limits during busy hours
     - cron: '*/20 * * * *'
   workflow_dispatch:
 
 env:
-  # This fixes the Node.js deprecation warning at the top level
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -17,19 +15,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: '3.10'
+          node-version: '20'
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests ecdsa base58
+        run: npm install
 
-      - name: Run Agent
+      - name: Run Heartbeat
         env:
           BTC_ADDRESS: ${{ secrets.BTC_ADDRESS }}
-          STX_ADDRESS: ${{ secrets.STX_ADDRESS }}
           MNEMONIC: ${{ secrets.MNEMONIC }}
-        run: python agent.py
+        run: node heartbeat.js
