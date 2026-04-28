@@ -1,83 +1,63 @@
 import os
 import sys
 import requests
-import json
 import hashlib
 import base64
 from datetime import datetime
 from ecdsa import SigningKey, SECP256k1
-import base58
 
-# Configuration from GitHub Secrets
+# Secrets from GitHub
 BTC_ADDRESS = os.getenv("BTC_ADDRESS")
 MNEMONIC = os.getenv("MNEMONIC")
 
 def get_iso_timestamp():
     return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
-def sha256(data):
-    return hashlib.sha256(data).digest()
-
-def sign_message_bip137(message, mnemonic):
-    """
-    Simplified BIP-137 style signing for automation.
-    Note: For BIP-322 (bc1q) it is recommended to use the aibtc-sdk.
-    This version provides a standard ECDSA signature over the message hash.
-    """
-    # 1. Prepare message with Bitcoin prefix
+def sign_simple(message, mnemonic):
+    """Signs a message using the raw derived key from the mnemonic."""
+    # Derive a key directly from the mnemonic hash (stable for this session)
+    seed = hashlib.sha256(mnemonic.encode()).digest()
+    sk = SigningKey.from_string(seed, curve=SECP256k1)
+    
+    # Bitcoin message hashing standard
     prefix = b"\x18Bitcoin Signed Message:\n"
     msg_bytes = message.encode('utf-8')
     full_msg = prefix + bytes([len(msg_bytes)]) + msg_bytes
     
-    # 2. Double SHA256 hash
-    msg_hash = sha256(sha256(full_msg))
+    # Double SHA256
+    msg_hash = hashlib.sha256(hashlib.sha256(full_msg).digest()).digest()
     
-    # 3. Derive a key from mnemonic (Simplified for this script)
-    # In a full production env, we'd use BIP-32/44 derivation.
-    seed = hashlib.sha256(mnemonic.encode()).digest()
-    sk = SigningKey.from_string(seed, curve=SECP256k1)
-    
-    # 4. Sign
+    # Sign and encode
     signature = sk.sign_deterministic(msg_hash, hashfunc=hashlib.sha256)
     return base64.b64encode(signature).decode('utf-8')
 
 def send_heartbeat():
-    print(f"[{datetime.utcnow()}] Sending heartbeat...")
+    print(f"[{datetime.utcnow()}] Heartbeat started...")
     timestamp = get_iso_timestamp()
     message = f"AIBTC Check-In | {timestamp}"
     
-    # Generate real signature
     try:
-        signature = sign_message_bip137(message, MNEMONIC)
+        signature = sign_simple(message, MNEMONIC)
         
         payload = {
             "btcAddress": BTC_ADDRESS,
             "message": message,
             "signature": signature,
-            "timestamp": timestamp
+            "timestamp": timestamp,
+            "agent": "Sage Spoke (GitHub Automation)"
         }
         
-        response = requests.post("https://aibtc.com/api/heartbeat", json=payload, timeout=10)
-        print(f"Heartbeat Result: {response.status_code} - {response.text}")
+        # We try the heartbeat endpoint
+        r = requests.post("https://aibtc.com/api/heartbeat", json=payload, timeout=15)
+        print(f"Server Response: {r.status_code} - {r.text}")
+        
     except Exception as e:
-        print(f"Signing or Heartbeat Failed: {e}")
-
-def file_arxiv_signal():
-    print(f"[{datetime.utcnow()}] Fetching fresh research...")
-    # (ArXiv fetching logic)
-    print("Action: Research check complete.")
+        print(f"Execution Error: {e}")
 
 if __name__ == "__main__":
     if not MNEMONIC or not BTC_ADDRESS:
-        print("ERROR: Missing secrets (MNEMONIC or BTC_ADDRESS).")
+        print("CRITICAL: Missing MNEMONIC or BTC_ADDRESS in Secrets.")
         sys.exit(1)
 
-    current_hour = datetime.utcnow().hour
-    print(f"Sage Spoke Agent starting. UTC Hour: {current_hour}")
-
+    print(f"Sage Spoke Booting... (Hour: {datetime.utcnow().hour})")
     send_heartbeat()
-
-    if current_hour == 6:
-        file_arxiv_signal()
-    elif current_hour == 13:
-        print("Tenero Market window active.")

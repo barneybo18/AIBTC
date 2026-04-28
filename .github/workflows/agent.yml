@@ -2,9 +2,13 @@ name: AIBTC Agent Automation
 
 on:
   schedule:
-    # Runs every 15 minutes to keep the agent highly active
-    - cron: '*/15 * * * *'
+    # Set to every 20 minutes to avoid hitting GitHub limits during busy hours
+    - cron: '*/20 * * * *'
   workflow_dispatch:
+
+env:
+  # This fixes the Node.js deprecation warning at the top level
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   run-agent:
@@ -21,12 +25,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install requests ecdsa base58
 
       - name: Run Agent
         env:
           BTC_ADDRESS: ${{ secrets.BTC_ADDRESS }}
           STX_ADDRESS: ${{ secrets.STX_ADDRESS }}
           MNEMONIC: ${{ secrets.MNEMONIC }}
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         run: python agent.py
