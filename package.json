@@ -1,13 +1,17 @@
 {
   "name": "aibtc-agent-node",
   "version": "1.0.0",
+  "scripts": {
+    "start": "node agent.js"
+  },
   "dependencies": {
-    "bitcoinjs-lib": "^6.1.5",
+    "@octokit/rest": "^22.0.1",
+    "axios": "^1.6.0",
+    "bip32": "^4.0.0",
     "bip322-js": "^3.0.0",
     "bip39": "^3.1.0",
-    "bip32": "^4.0.0",
-    "tiny-secp256k1": "^2.2.3",
+    "bitcoinjs-lib": "^6.1.5",
     "ecpair": "^2.1.0",
-    "axios": "^1.6.0"
+    "tiny-secp256k1": "^2.2.3"
   }
 }
