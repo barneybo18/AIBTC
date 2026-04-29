@@ -28,4 +28,5 @@ jobs:
         env:
           BTC_ADDRESS: ${{ secrets.BTC_ADDRESS }}
           MNEMONIC: ${{ secrets.MNEMONIC }}
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: node agent.js

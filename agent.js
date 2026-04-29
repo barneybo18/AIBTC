@@ -14,9 +14,9 @@ const ECPair = ECPairFactory(ecc);
 
 const BTC_ADDRESS = process.env.BTC_ADDRESS;
 const MNEMONIC = process.env.MNEMONIC;
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GH_PAT = process.env.GH_PAT;
 
-const octokit = new Octokit({ auth: GITHUB_TOKEN });
+const octokit = new Octokit({ auth: GH_PAT });
 
 async function signMessage(message) {
     const seed = await bip39.mnemonicToSeed(MNEMONIC);
@@ -44,8 +44,8 @@ async function sendHeartbeat() {
 }
 
 async function submitSkillToCompetition(skillName, skillContent) {
-    if (!GITHUB_TOKEN) {
-        console.warn("GITHUB_TOKEN not found. Skipping PR automation.");
+    if (!GH_PAT) {
+        console.warn("GH_PAT not found. Skipping PR automation.");
         return;
     }
 
