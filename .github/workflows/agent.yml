@@ -30,3 +30,9 @@ jobs:
           MNEMONIC: ${{ secrets.MNEMONIC }}
           GH_PAT: ${{ secrets.GH_PAT }}
         run: node agent.js
+
+      - name: Commit and Push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: autonomous agent update (new signals/skills)"
+          file_pattern: 'skills/* news-log.md'
